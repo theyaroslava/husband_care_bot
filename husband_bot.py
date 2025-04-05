@@ -44,6 +44,25 @@ async def start(message: types.Message):
     await message.answer("Привет, красотка! Готова делать приятности мужу? 💖")
 
 @router.message(Command("стата"))
+@router.message(Command("любить"))
+async def love_command(message: types.Message):
+    tasks = pick_daily_tasks()
+    user_id = message.from_user.id
+    user_tasks[user_id] = {
+        "date": datetime.now().date().isoformat(),
+        "tasks": tasks,
+        "done": []
+    }
+    await message.answer(
+        f"💌 Вот идеи, как полюбить мужа сегодня:
+
+" +
+        "
+".join([f"{i+1}. {task}" for i, task in enumerate(tasks)]),
+        reply_markup=generate_task_keyboard(tasks)
+    )
+
+@router.message(Command("стата"))
 async def send_stats(message: types.Message):
     user_id = message.from_user.id
     stats = user_stats.get(user_id, {})
@@ -52,9 +71,14 @@ async def send_stats(message: types.Message):
         return
 
     total = sum(stats.values())
-    text = f"<b>Твоя статистика за всё время:</b>\n\nВсего выполнено: <b>{total}</b>\n\n"
+    text = f"<b>Твоя статистика за всё время:</b>
+
+Всего выполнено: <b>{total}</b>
+
+"
     for task, count in stats.items():
-        text += f"{task} — <b>{count}</b> раз(а)\n"
+        text += f"{task} — <b>{count}</b> раз(а)
+"
 
     await message.answer(text)
 
@@ -97,24 +121,44 @@ async def send_daily_updates(hour):
             }
             await bot.send_message(
                 user_id,
-                f"🌞 Доброе утро, красотка! Вот чем можно порадовать мужа сегодня:\n\n" +
-                "\n".join([f"{i+1}. {task}" for i, task in enumerate(tasks)]),
+                f"🌞 Доброе утро, красотка! Вот чем можно порадовать мужа сегодня:
+
+" +
+                "
+".join([f"{i+1}. {task}" for i, task in enumerate(tasks)]),
                 reply_markup=generate_task_keyboard(tasks)
             )
         elif hour in [11, 14, 17, 20]:
             done = data.get("done", [])
             remaining = [t for t in data.get("tasks", []) if t not in done]
-            text = f"⏳ Статус дня:\n✅ Сделано:\n"
-            text += ("\n".join([f"• {d}" for d in done]) if done else "• Пока ничего")
-            text += "\n\n❗ Осталось:\n"
-            text += ("\n".join([f"• {r}" for r in remaining]) if remaining else "• Всё сделано! 💕")
+            text = f"⏳ Статус дня:
+✅ Сделано:
+"
+            text += ("
+".join([f"• {d}" for d in done]) if done else "• Пока ничего")
+            text += "
+
+❗ Осталось:
+"
+            text += ("
+".join([f"• {r}" for r in remaining]) if remaining else "• Всё сделано! 💕")
             await bot.send_message(user_id, text)
         elif hour == 22:
             done = data.get("done", [])
             remaining = [t for t in data.get("tasks", []) if t not in done]
-            text = f"🌙 День подошёл к концу...\n\n"
-            text += "✅ Ты сделала:\n" + ("\n".join([f"• {d}" for d in done]) if done else "• Пока ничего") + "\n\n"
-            text += "❌ Не успела:\n" + ("\n".join([f"• {r}" for r in remaining]) if remaining else "• Всё успела!") + "\n\n"
+            text = f"🌙 День подошёл к концу...
+
+"
+            text += "✅ Ты сделала:
+" + ("
+".join([f"• {d}" for d in done]) if done else "• Пока ничего") + "
+
+"
+            text += "❌ Не успела:
+" + ("
+".join([f"• {r}" for r in remaining]) if remaining else "• Всё успела!") + "
+
+"
             text += "Ты просто чудо. Завтра новый день — и ты снова разорвёшь! 💖"
             await bot.send_message(user_id, text)
 
